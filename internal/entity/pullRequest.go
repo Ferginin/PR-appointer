@@ -5,18 +5,11 @@ import (
 	"time"
 )
 
-type PRStatus string
-
-const (
-	PRStatusOpen   PRStatus = "OPEN"
-	PRStatusMerged PRStatus = "MERGED"
-)
-
 type PullRequest struct {
 	ID        int          `json:"id" db:"id"`
 	Title     string       `json:"title" db:"title" binding:"required"`
 	AuthorID  int          `json:"author_id" db:"author_id" binding:"required"`
-	Status    PRStatus     `json:"status" db:"status"`
+	Status    string       `json:"status" db:"status"`
 	CreatedAt time.Time    `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at" db:"updated_at"`
 	MergedAt  sql.NullTime `json:"merged_at" db:"merged_at"`
