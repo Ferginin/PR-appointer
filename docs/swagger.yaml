@@ -1,0 +1,369 @@
+definitions:
+  entity.MergedPRResponse:
+    properties:
+      author:
+        $ref: '#/definitions/entity.UserResponse'
+      merged_at:
+        type: string
+      pull_request_id:
+        type: integer
+      pull_request_name:
+        type: string
+      reviewers:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+      status:
+        type: string
+    type: object
+  entity.PRCreateRequest:
+    properties:
+      author_id:
+        type: integer
+      pull_request_id:
+        type: integer
+      pull_request_name:
+        type: string
+    type: object
+  entity.PRDetailResponse:
+    properties:
+      author:
+        $ref: '#/definitions/entity.UserResponse'
+      pull_request_id:
+        type: integer
+      pull_request_name:
+        type: string
+      reviewers:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+      status:
+        type: string
+    type: object
+  entity.PRSummary:
+    properties:
+      author_id:
+        type: integer
+      pull_request_id:
+        type: integer
+      pull_request_name:
+        type: string
+      status:
+        type: string
+    type: object
+  entity.ReassignHandlerResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/entity.PRDetailResponse'
+      replaced_by:
+        type: string
+    type: object
+  entity.ReassignReviewerRequest:
+    properties:
+      old_reviewer_id:
+        minimum: 1
+        type: integer
+      pull_request_id:
+        type: integer
+    required:
+    - old_reviewer_id
+    - pull_request_id
+    type: object
+  entity.TeamCreateRequest:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+      team_name:
+        type: string
+    type: object
+  entity.TeamResponse:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+      team_name:
+        type: string
+    type: object
+  entity.UpdatePRStatusRequest:
+    properties:
+      pull_request_id:
+        type: integer
+    required:
+    - pull_request_id
+    type: object
+  entity.UserRequest:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  entity.UserResponse:
+    properties:
+      is_active:
+        type: boolean
+      team_name:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  entity.UserReviewsResponse:
+    properties:
+      pull_requests:
+        items:
+          $ref: '#/definitions/entity.PRSummary'
+        type: array
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  handler.APIError:
+    properties:
+      error:
+        properties:
+          code:
+            $ref: '#/definitions/handler.ErrorCode'
+          message:
+            type: string
+        type: object
+    type: object
+  handler.ErrorCode:
+    enum:
+    - TEAM_EXISTS
+    - PR_EXISTS
+    - PR_MERGED
+    - NOT_ASSIGNED
+    - NO_CANDIDATE
+    - NOT_FOUND
+    type: string
+    x-enum-varnames:
+    - ErrCodeTeamExists
+    - ErrCodePRExists
+    - ErrCodePRMerged
+    - ErrCodeNotAssigned
+    - ErrCodeNoCandidate
+    - ErrCodeNotFound
+host: localhost:8080
+info:
+  contact:
+    email: support@clinic.com
+    name: API Support
+  description: API для управления пул реквестами
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: PR Reviewer Assignment Service (Test Task, Fall 2025)
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Check service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+  /pullRequest/create:
+    post:
+      consumes:
+      - application/json
+      description: Create PR and automatically assign up to 2 reviewers from author's
+        team
+      parameters:
+      - description: PR data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.PRCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.PRDetailResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Create PR with auto-assigned reviewers
+      tags:
+      - PullRequests
+  /pullRequest/merge:
+    post:
+      consumes:
+      - application/json
+      description: Set PR status to MERGED (idempotent operation)
+      parameters:
+      - description: PR ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UpdatePRStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.MergedPRResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Mark PR as merged
+      tags:
+      - PullRequests
+  /pullRequest/reassign:
+    post:
+      consumes:
+      - application/json
+      description: Replace one reviewer with another from same team
+      parameters:
+      - description: Reassignment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.ReassignReviewerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.ReassignHandlerResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Reassign reviewer
+      tags:
+      - PullRequests
+  /team/add:
+    post:
+      consumes:
+      - application/json
+      description: Create team and create/update users in it
+      parameters:
+      - description: Team data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.TeamCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.TeamResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Create team with members
+      tags:
+      - Teams
+  /team/get:
+    get:
+      description: Get team by name
+      parameters:
+      - description: Team name
+        in: query
+        name: team_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.TeamResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Get team with members
+      tags:
+      - Teams
+  /users/getReview:
+    get:
+      description: Get list of PRs where user is assigned as reviewer
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserReviewsResponse'
+      summary: Get PRs assigned to user as reviewer
+      tags:
+      - Users
+  /users/setIsActive:
+    post:
+      consumes:
+      - application/json
+      description: Update user's is_active flag
+      parameters:
+      - description: User active status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
+      summary: Set user active status
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

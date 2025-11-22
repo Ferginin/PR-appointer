@@ -1,0 +1,47 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: PR-appointer
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=PR_appointer_db
+      - IP_ADDRESS=0.0.0.0
+      - API_PORT=8080
+    depends_on:
+      - postgres
+    networks:
+      - PR-appointer-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: PR_appointer_DB
+    environment:
+      - POSTGRES_DB=PR_appointer_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./iternal/storage/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - PR-appointer-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  PR-appointer-network:
+    driver: bridge
