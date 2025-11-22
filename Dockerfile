@@ -30,9 +30,6 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /pr-appointer .
 
-# Copy .env file if needed (optional, better to use docker-compose env)
-COPY .env .env
-
 # Expose port
 EXPOSE 8080
 
