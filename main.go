@@ -21,7 +21,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:6060
+// @host localhost:8080
 // @BasePath
 
 // @securityDefinitions.apikey BearerAuth
@@ -30,7 +30,6 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
-
 	slog.Info("Starting main")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -52,7 +51,7 @@ func main() {
 
 	case err := <-errChan:
 		if err != nil {
-			slog.Error("Error during application start:", err)
+			slog.Error("Error during application start:", err.Error(), nil)
 		} else {
 			slog.Info("Application stopped")
 		}

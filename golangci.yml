@@ -1,0 +1,118 @@
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # Проверка обработки ошибок
+    - gosimple      # Упрощение кода
+    - ineffassign   # Обнаружение неиспользуемых присваиваний
+    - staticcheck   # Множество статических проверок
+    - unused        # Неиспользуемые переменные и функции
+    
+    # Additional important linters
+    - gofmt         # Проверка форматирования
+    - goimports     # Проверка импортов
+    - misspell      # Проверка орфографии в комментариях
+    - revive        # Быстрая замена golint
+    - gosec         # Проверка безопасности
+    - bodyclose     # Проверка закрытия HTTP body
+    - dupl          # Обнаружение дублирования кода
+    - goconst       # Обнаружение строк, которые можно заменить константами
+    - gocyclo       # Вычисление цикломатической сложности
+    - errorlint     # Проверка работы с ошибками
+    - predeclared   # Проверка переопределения встроенных идентификаторов
+    - unconvert     # Удаление ненужных преобразований типов
+    - unparam       # Обнаружение неиспользуемых параметров функций
+    - whitespace    # Обнаружение лишних пробелов
+
+  disable:
+    - typecheck     # Может конфликтовать с IDE
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+      - (*database/sql.Rows).Close
+
+  gocyclo:
+    min-complexity: 20
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  misspell:
+    locale: US
+
+  revive:
+    confidence: 0.8
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gosec:
+    excludes:
+      - G104  # Audit errors not checked (handled by errcheck)
+      - G404
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+    # Exclude known linters from partially hard-vendored code
+    - path: internal/storage/
+      linters:
+        - goconst
+
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+
+  # Maximum count of issues with the same text
+  max-same-issues: 3
+
+  # Show only new issues created after git revision
+  new: false
+
+  # Fix found issues (if it's supported by the linter)
+  fix: false

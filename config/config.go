@@ -1,20 +1,21 @@
 package config
 
 import (
+	"log/slog"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"log/slog"
 )
 
 type Env struct {
-	DB_NAME     string `env:"DB_NAME"`
-	DB_USERNAME string `env:"DB_USERNAME"`
-	DB_PASSWORD string `env:"DB_PASSWORD"`
-	DB_PORT     int    `env:"DB_PORT"`
-	DB_HOST     string `env:"DB_HOST"`
-	IpAddress   string `env:"IP_ADDRESS"`
-	API_PORT    int    `env:"API_PORT"`
+	DBName     string `env:"DB_NAME"`
+	DBUsername string `env:"DB_USERNAME"`
+	DBPassword string `env:"DB_PASSWORD"`
+	DBPort     int    `env:"DB_PORT"`
+	DBHost     string `env:"DB_HOST"`
+	IPAddress  string `env:"IP_ADDRESS"`
+	APIPort    int    `env:"API_PORT"`
 
 	Environment string `env:"ENVIRONMENT"`
 }
@@ -41,7 +42,7 @@ func GetEnv() *Env {
 	var cfg Env
 	err = env.Parse(&cfg)
 	if err != nil {
-		slog.Error("Error parsing .env file:", err.Error())
+		slog.Error("Error parsing .env file:", err.Error(), nil)
 		panic(err)
 	}
 

@@ -1,4 +1,21 @@
 definitions:
+  entity.MergedPRResponse:
+    properties:
+      author:
+        $ref: '#/definitions/entity.UserResponse'
+      merged_at:
+        type: string
+      pull_request_id:
+        type: integer
+      pull_request_name:
+        type: string
+      reviewers:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+      status:
+        type: string
+    type: object
   entity.PRCreateRequest:
     properties:
       author_id:
@@ -211,7 +228,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.PRDetailResponse'
+            $ref: '#/definitions/entity.MergedPRResponse'
         "404":
           description: Not Found
           schema:

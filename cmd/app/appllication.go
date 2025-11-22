@@ -5,6 +5,7 @@ import (
 	"PR-appointer/internal/router"
 	"PR-appointer/internal/storage"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -24,9 +25,9 @@ func StartApplication(ctx context.Context) error {
 
 	cfg.Client = storage.NewConnection(ctx, cfg)
 
-	r := router.SetupRouter(cfg, cfg.Client)
+	r := router.SetupRouter(ctx, cfg.Client)
 
-	addr := fmt.Sprintf("%s:%d", cfg.Env.IpAddress, cfg.Env.API_PORT)
+	addr := fmt.Sprintf("%s:%d", cfg.Env.IPAddress, cfg.Env.APIPort)
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      r,
@@ -39,7 +40,7 @@ func StartApplication(ctx context.Context) error {
 		slog.Info("starting server")
 		slog.Info("Swagger UI available at", "url", fmt.Sprintf("http://%s/swagger/index.html", addr))
 
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("failed to start server", "err", err)
 			panic(err)
 		}

@@ -1,24 +1,26 @@
 package storage
 
 import (
-	"PR-appointer/config"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"PR-appointer/config"
 )
 
 func NewConnection(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	env := cfg.Env
 
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
-		env.DB_USERNAME,
-		env.DB_PASSWORD,
-		env.DB_HOST,
-		env.DB_PORT,
-		env.DB_NAME,
+		env.DBUsername,
+		env.DBPassword,
+		env.DBHost,
+		env.DBPort,
+		env.DBName,
 	)
 
 	config, err := pgxpool.ParseConfig(dsn)
@@ -33,12 +35,16 @@ func NewConnection(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 
 	conn, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		slog.Error("Unable to connect to database:", err.Error())
+		slog.Error("Unable to connect to database:", err.Error(), nil)
 		panic(err)
 	}
 
-	if err = CheckAndMigrate(conn); err != nil {
-		slog.Error("Unable to migrate database:", err.Error())
+	if err = Migrate(conn); err != nil {
+		slog.Error("Unable to migrate database:", err.Error(), nil)
+		panic(err)
+	}
+	if err = DataInsert(conn); err != nil {
+		slog.Error("Unable to migrate data:", err.Error(), nil)
 		panic(err)
 	}
 

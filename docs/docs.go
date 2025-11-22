@@ -120,7 +120,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/entity.PRDetailResponse"
+                            "$ref": "#/definitions/entity.MergedPRResponse"
                         }
                     },
                     "404": {
@@ -324,6 +324,32 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "entity.MergedPRResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/entity.UserResponse"
+                },
+                "merged_at": {
+                    "type": "string"
+                },
+                "pull_request_id": {
+                    "type": "integer"
+                },
+                "pull_request_name": {
+                    "type": "string"
+                },
+                "reviewers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.UserResponse"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.PRCreateRequest": {
             "type": "object",
             "properties": {
@@ -541,13 +567,15 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:6060",
+	Host:             "localhost:8080",
 	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "PR Reviewer Assignment Service (Test Task, Fall 2025)",
 	Description:      "API для управления пул реквестами",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
