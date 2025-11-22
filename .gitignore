@@ -55,15 +55,13 @@ temp/
 *.a
 
 # macOS
-.DS_Store
 
 # Windows
 Thumbs.db
 desktop.ini
 
 # Swagger docs (if auto-generated)
-docs/swagger.json
-docs/swagger.yaml
+#docs/swagger.json
+#docs/swagger.yaml
 
 # Air (live reload)
-tmp/
