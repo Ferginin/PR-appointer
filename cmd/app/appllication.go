@@ -38,7 +38,7 @@ func StartApplication(ctx context.Context) error {
 
 	go func() {
 		slog.Info("starting server")
-		slog.Info("Swagger UI available at", "url", fmt.Sprintf("http://%s/swagger/index.html", addr))
+		slog.Info("Swagger UI available at", "url", fmt.Sprintf("http://localhost:8080/swagger/index.html"))
 
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("failed to start server", "err", err)
