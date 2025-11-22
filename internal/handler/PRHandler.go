@@ -1,19 +1,21 @@
 package handler
 
 import (
-	"PR-appointer/config"
-	"PR-appointer/internal/entity"
-	"PR-appointer/internal/service"
+	"context"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
+
+	"PR-appointer/internal/entity"
+	"PR-appointer/internal/service"
 )
 
 type PRHandler struct {
 	prService *service.PRService
 }
 
-func NewPRHandler(cfg *config.Config, db *pgxpool.Pool) *PRHandler {
+func NewPRHandler(ctx context.Context, db *pgxpool.Pool) *PRHandler {
 	return &PRHandler{
 		prService: service.NewPRService(db),
 	}
@@ -63,7 +65,7 @@ func (h *PRHandler) CreatePR(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body entity.UpdatePRStatusRequest true "PR ID"
-// @Success 200 {object} entity.PRDetailResponse
+// @Success 200 {object} entity.MergedPRResponse
 // @Failure 404 {object} APIError
 // @Router /pullRequest/merge [post]
 func (h *PRHandler) MergePR(c *gin.Context) {

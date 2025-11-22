@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,7 +25,7 @@ func (r *TeamRepository) Create(ctx context.Context, name string) (*entity.Team,
 		RETURNING id, name, created_at, updated_at
 	`
 
-	var team entity.Team
+	team := entity.Team{}
 	err := r.db.QueryRow(ctx, query, name).Scan(
 		&team.ID,
 		&team.Name,
@@ -46,7 +47,7 @@ func (r *TeamRepository) GetByName(ctx context.Context, name string) (*entity.Te
 		WHERE name = $1
 	`
 
-	var team entity.Team
+	team := entity.Team{}
 	err := r.db.QueryRow(ctx, query, name).Scan(
 		&team.ID,
 		&team.Name,
@@ -71,7 +72,7 @@ func (r *TeamRepository) GetByID(ctx context.Context, teamID int) (*entity.Team,
 		WHERE id = $1
 	`
 
-	var team entity.Team
+	team := entity.Team{}
 	err := r.db.QueryRow(ctx, query, teamID).Scan(
 		&team.ID,
 		&team.Name,
@@ -104,11 +105,12 @@ func (r *TeamRepository) AddMember(ctx context.Context, teamID, userID int) erro
 	return nil
 }
 
-func (r *TeamRepository) GetMembers(ctx context.Context, teamID int) ([]entity.User, error) {
+func (r *TeamRepository) GetMembers(ctx context.Context, teamID int) ([]entity.UserResponse, error) {
 	query := `
-		SELECT u.id, u.username, u.is_active, u.created_at, u.updated_at
+		SELECT u.id, u.username, u.is_active, t.name
 		FROM users u
-		INNER JOIN team_members tm ON u.id = tm.user_id
+		JOIN team_members tm ON u.id = tm.user_id
+		JOIN teams t on tm.team_id = t.id
 		WHERE tm.team_id = $1
 		ORDER BY u.id
 	`
@@ -117,32 +119,16 @@ func (r *TeamRepository) GetMembers(ctx context.Context, teamID int) ([]entity.U
 	if err != nil {
 		return nil, fmt.Errorf("failed to query team members: %w", err)
 	}
-	defer rows.Close()
 
-	var members []entity.User
-	for rows.Next() {
-		var user entity.User
-		err := rows.Scan(
-			&user.ID,
-			&user.Username,
-			&user.IsActive,
-			&user.CreatedAt,
-			&user.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan team member: %w", err)
-		}
-		members = append(members, user)
-	}
-
-	return members, nil
+	return ScanUserResponses(ctx, rows) // Используем общую функцию
 }
 
-func (r *TeamRepository) GetActiveMembers(ctx context.Context, teamID int, excludeUserID *int) ([]entity.User, error) {
+func (r *TeamRepository) GetActiveMembers(ctx context.Context, teamID int, excludeUserID *int) ([]entity.UserResponse, error) {
 	query := `
-		SELECT u.id, u.username, u.is_active, u.created_at, u.updated_at
+		SELECT u.id, u.username, u.is_active, t.name
 		FROM users u
-		INNER JOIN team_members tm ON u.id = tm.user_id
+		JOIN team_members tm ON u.id = tm.user_id
+		JOIN teams t on tm.team_id = t.id
 		WHERE tm.team_id = $1 AND u.is_active = TRUE
 	`
 
@@ -161,15 +147,14 @@ func (r *TeamRepository) GetActiveMembers(ctx context.Context, teamID int, exclu
 	}
 	defer rows.Close()
 
-	var members []entity.User
+	var members []entity.UserResponse
 	for rows.Next() {
-		var user entity.User
+		user := entity.UserResponse{}
 		err := rows.Scan(
-			&user.ID,
+			&user.UserID,
 			&user.Username,
 			&user.IsActive,
-			&user.CreatedAt,
-			&user.UpdatedAt,
+			&user.TeamName,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan team member: %w", err)

@@ -1,8 +1,10 @@
 package router
 
 import (
-	"PR-appointer/config"
 	"PR-appointer/internal/handler"
+	"PR-appointer/internal/middleware"
+	"context"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,7 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
+func SetupRouter(ctx context.Context, db *pgxpool.Pool) *gin.Engine {
 	router := gin.Default()
 
 	corsConfig := cors.DefaultConfig()
@@ -19,7 +21,7 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
 	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	corsConfig.AllowCredentials = true
-	router.Use(cors.New(corsConfig))
+	router.Use(cors.New(corsConfig), middleware.MetricsMiddleware())
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
@@ -27,9 +29,9 @@ func SetupRouter(cfg *config.Config, db *pgxpool.Pool) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	teamHandler := handler.NewTeamHandler(cfg, db)
-	userHandler := handler.NewUserHandler(cfg, db)
-	PRHandler := handler.NewPRHandler(cfg, db)
+	teamHandler := handler.NewTeamHandler(ctx, db)
+	userHandler := handler.NewUserHandler(ctx, db)
+	PRHandler := handler.NewPRHandler(ctx, db)
 
 	api := router.Group("/")
 	{

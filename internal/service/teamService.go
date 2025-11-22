@@ -1,11 +1,12 @@
 package service
 
 import (
-	"PR-appointer/internal/entity"
 	"context"
 	"errors"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"PR-appointer/internal/entity"
 	"PR-appointer/internal/repository"
 )
 
@@ -22,13 +23,11 @@ func NewTeamService(db *pgxpool.Pool) *TeamService {
 }
 
 func (s *TeamService) CreateTeam(ctx context.Context, req *entity.TeamCreateRequest) (*entity.TeamResponse, error) {
-	// Проверяем, существует ли команда
-	existingTeam, _ := s.teamRepo.GetByName(ctx, req.TeamName)
-	if existingTeam != nil {
+	existingTeam, err := s.teamRepo.GetByName(ctx, req.TeamName)
+	if existingTeam != nil || err != nil {
 		return nil, errors.New("team already exists")
 	}
 
-	// Создаем команду
 	team, err := s.teamRepo.Create(ctx, req.TeamName)
 	if err != nil {
 		return nil, err
@@ -37,21 +36,20 @@ func (s *TeamService) CreateTeam(ctx context.Context, req *entity.TeamCreateRequ
 	// Создаем/обновляем пользователей и добавляем в команду
 	var members []entity.UserResponse
 	for _, member := range req.Members {
-		// Upsert пользователя
 		user, err := s.userRepo.Upsert(ctx, member.Username, member.IsActive)
 		if err != nil {
 			return nil, err
 		}
 
-		// Добавляем в команду
-		if err := s.teamRepo.AddMember(ctx, team.ID, user.ID); err != nil {
+		if err := s.teamRepo.AddMember(ctx, team.ID, user.UserID); err != nil {
 			return nil, err
 		}
 
 		members = append(members, entity.UserResponse{
-			UserID:   user.ID,
+			UserID:   user.UserID,
 			Username: user.Username,
 			IsActive: user.IsActive,
+			TeamName: user.TeamName,
 		})
 	}
 
@@ -67,7 +65,6 @@ func (s *TeamService) GetTeamByName(ctx context.Context, teamName string) (*enti
 		return nil, err
 	}
 
-	// Получаем участников команды
 	members, err := s.teamRepo.GetMembers(ctx, team.ID)
 	if err != nil {
 		return nil, err
@@ -76,9 +73,10 @@ func (s *TeamService) GetTeamByName(ctx context.Context, teamName string) (*enti
 	var memberResponses []entity.UserResponse
 	for _, member := range members {
 		memberResponses = append(memberResponses, entity.UserResponse{
-			UserID:   member.ID,
+			UserID:   member.UserID,
 			Username: member.Username,
 			IsActive: member.IsActive,
+			TeamName: member.TeamName,
 		})
 	}
 

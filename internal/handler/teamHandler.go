@@ -1,19 +1,20 @@
 package handler
 
 import (
-	"PR-appointer/config"
 	"PR-appointer/internal/entity"
 	"PR-appointer/internal/service"
+	"context"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
 )
 
 type TeamHandler struct {
 	teamService *service.TeamService
 }
 
-func NewTeamHandler(cfg *config.Config, db *pgxpool.Pool) *TeamHandler {
+func NewTeamHandler(ctx context.Context, db *pgxpool.Pool) *TeamHandler {
 	return &TeamHandler{
 		teamService: service.NewTeamService(db),
 	}

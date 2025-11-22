@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,7 +25,7 @@ func (r *UserRepository) Create(ctx context.Context, username string, isActive b
 		RETURNING id, username, is_active, created_at, updated_at
 	`
 
-	var user entity.User
+	user := entity.User{}
 	err := r.db.QueryRow(ctx, query, username, isActive).Scan(
 		&user.ID,
 		&user.Username,
@@ -48,7 +49,7 @@ func (r *UserRepository) GetByID(ctx context.Context, userID int) (*entity.UserR
 		WHERE users.id = $1
 	`
 
-	var user entity.UserResponse
+	user := entity.UserResponse{}
 	err := r.db.QueryRow(ctx, query, userID).Scan(
 		&user.UserID,
 		&user.Username,
@@ -73,7 +74,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*e
 		WHERE username = $1
 	`
 
-	var user entity.User
+	user := entity.User{}
 	err := r.db.QueryRow(ctx, query, username).Scan(
 		&user.ID,
 		&user.Username,
@@ -108,7 +109,7 @@ func (r *UserRepository) UpdateStatus(ctx context.Context, userID int, isActive 
 		WHERE users.id = $1
 	`
 
-	var user entity.UserResponse
+	user := entity.UserResponse{}
 	err := r.db.QueryRow(ctx, query, userID).Scan(
 		&user.UserID,
 		&user.Username,
@@ -122,26 +123,38 @@ func (r *UserRepository) UpdateStatus(ctx context.Context, userID int, isActive 
 	return &user, nil
 }
 
-func (r *UserRepository) Upsert(ctx context.Context, username string, isActive bool) (*entity.User, error) {
+func (r *UserRepository) Upsert(ctx context.Context, username string, isActive bool) (*entity.UserResponse, error) {
 	query := `
 		INSERT INTO users (username, is_active)
 		VALUES ($1, $2)
 		ON CONFLICT (username) 
 		DO UPDATE SET is_active = EXCLUDED.is_active, updated_at = CURRENT_TIMESTAMP
-		RETURNING id, username, is_active, created_at, updated_at
+		RETURNING id
 	`
-
-	var user entity.User
+	userID := 0
 	err := r.db.QueryRow(ctx, query, username, isActive).Scan(
-		&user.ID,
+		&userID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert user: %w", err)
+	}
+
+	query = `
+		SELECT users.id, username, is_active, teams.name FROM users
+		JOIN team_members on team_members.user_id = users.id
+		JOIN teams on teams.id = team_members.team_id
+		WHERE users.id = $1
+	`
+	user := entity.UserResponse{}
+	err = r.db.QueryRow(ctx, query, userID).Scan(
+		&user.UserID,
 		&user.Username,
 		&user.IsActive,
-		&user.CreatedAt,
-		&user.UpdatedAt,
+		&user.TeamName,
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to upsert user: %w", err)
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	return &user, nil

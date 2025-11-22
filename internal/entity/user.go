@@ -10,11 +10,6 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
-type PostUserRequest struct {
-	Username string `json:"username" binding:"required,min=3,max=255"`
-	IsActive bool   `json:"is_active,omitempty"`
-}
-
 type UserRequest struct {
 	UserID   int  `json:"user_id" binding:"required"`
 	IsActive bool `json:"is_active,omitempty"`

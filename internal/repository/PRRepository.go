@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,7 +25,7 @@ func (r *PRRepository) Create(ctx context.Context, id int, title string, authorI
 		RETURNING id, title, author_id, status, created_at, updated_at
 	`
 
-	var pr entity.PullRequest
+	pr := entity.PullRequest{}
 	err := r.db.QueryRow(ctx, query, id, title, authorID).Scan(
 		&pr.ID,
 		&pr.Title,
@@ -44,12 +45,12 @@ func (r *PRRepository) Create(ctx context.Context, id int, title string, authorI
 
 func (r *PRRepository) GetByID(ctx context.Context, prID int) (*entity.PullRequest, error) {
 	query := `
-		SELECT id, title, author_id, status, created_at, updated_at
+		SELECT id, title, author_id, status, created_at, updated_at, merged_at
 		FROM pull_requests
 		WHERE id = $1
 	`
 
-	var pr entity.PullRequest
+	pr := entity.PullRequest{}
 	err := r.db.QueryRow(ctx, query, prID).Scan(
 		&pr.ID,
 		&pr.Title,
@@ -57,6 +58,7 @@ func (r *PRRepository) GetByID(ctx context.Context, prID int) (*entity.PullReque
 		&pr.Status,
 		&pr.CreatedAt,
 		&pr.UpdatedAt,
+		&pr.MergedAt,
 	)
 
 	if err != nil {
@@ -72,12 +74,12 @@ func (r *PRRepository) GetByID(ctx context.Context, prID int) (*entity.PullReque
 func (r *PRRepository) UpdateStatus(ctx context.Context, prID int, status string) (*entity.PullRequest, error) {
 	query := `
 		UPDATE pull_requests
-		SET status = $1, updated_at = CURRENT_TIMESTAMP
+		SET status = $1, updated_at = CURRENT_TIMESTAMP, merged_at = CURRENT_TIMESTAMP
 		WHERE id = $2
-		RETURNING id, title, author_id, status, created_at, updated_at
+		RETURNING id, title, author_id, status, created_at, updated_at, merged_at
 	`
 
-	var pr entity.PullRequest
+	pr := entity.PullRequest{}
 	err := r.db.QueryRow(ctx, query, status, prID).Scan(
 		&pr.ID,
 		&pr.Title,
@@ -85,6 +87,7 @@ func (r *PRRepository) UpdateStatus(ctx context.Context, prID int, status string
 		&pr.Status,
 		&pr.CreatedAt,
 		&pr.UpdatedAt,
+		&pr.MergedAt,
 	)
 
 	if err != nil {
@@ -140,24 +143,8 @@ func (r *PRRepository) GetReviewers(ctx context.Context, prID int) ([]entity.Use
 	if err != nil {
 		return nil, fmt.Errorf("failed to query reviewers: %w", err)
 	}
-	defer rows.Close()
 
-	var reviewers []entity.UserResponse
-	for rows.Next() {
-		var user entity.UserResponse
-		err := rows.Scan(
-			&user.UserID,
-			&user.Username,
-			&user.IsActive,
-			&user.TeamName,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan reviewer: %w", err)
-		}
-		reviewers = append(reviewers, user)
-	}
-
-	return reviewers, nil
+	return ScanUserResponses(ctx, rows) // Используем общую функцию
 }
 
 func (r *PRRepository) IsReviewerAssigned(ctx context.Context, prID int, reviewerID int) (bool, error) {
@@ -194,7 +181,7 @@ func (r *PRRepository) GetPRsByReviewer(ctx context.Context, reviewerID int) ([]
 
 	var prs []entity.PullRequest
 	for rows.Next() {
-		var pr entity.PullRequest
+		pr := entity.PullRequest{}
 		err := rows.Scan(
 			&pr.ID,
 			&pr.Title,

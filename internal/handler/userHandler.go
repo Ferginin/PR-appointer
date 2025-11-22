@@ -1,14 +1,13 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
-	_ "strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"PR-appointer/config"
 	"PR-appointer/internal/entity"
 	"PR-appointer/internal/service"
 )
@@ -17,7 +16,7 @@ type UserHandler struct {
 	userService *service.UserService
 }
 
-func NewUserHandler(cfg *config.Config, db *pgxpool.Pool) *UserHandler {
+func NewUserHandler(ctx context.Context, db *pgxpool.Pool) *UserHandler {
 	return &UserHandler{
 		userService: service.NewUserService(db),
 	}
